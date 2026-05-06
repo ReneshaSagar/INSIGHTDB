@@ -145,11 +145,19 @@ class QualityEngine:
                     # Range check via SQL
                     p_range = policy.get("range")
                     if p_range and len(p_range) == 2:
-                        res_out = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\" WHERE \"{col}\" < {p_range[0]} OR \"{col}\" > {p_range[1]}")
-                        out_of_range = res_out[0][0] if res_out else 0
-                        if out_of_range > 0:
-                            table_metrics["issues"].append(f"Value range violation in {col} (expected {p_range})")
-                            total_outliers += out_of_range
+                        conds = []
+                        if p_range[0] is not None:
+                            conds.append(f"\"{col}\" < {p_range[0]}")
+                        if p_range[1] is not None:
+                            conds.append(f"\"{col}\" > {p_range[1]}")
+                        
+                        if conds:
+                            cond_str = " OR ".join(conds)
+                            res_out = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\" WHERE {cond_str}")
+                            out_of_range = res_out[0][0] if res_out else 0
+                            if out_of_range > 0:
+                                table_metrics["issues"].append(f"Value range violation in {col} (expected {p_range})")
+                                total_outliers += out_of_range
                     
                     # Outliers via SQL (Z-score > 3)
                     if std > 0:

@@ -197,10 +197,23 @@ function initCharts(qualityData = null, trustData = null) {
             maintainAspectRatio: false,
             scales: {
                 r: {
-                    angleLines: { display: true },
+                    angleLines: { 
+                        display: true, 
+                        color: document.body.classList.contains('dark-mode') ? '#334155' : '#e2e8f0' 
+                    },
+                    grid: {
+                        color: document.body.classList.contains('dark-mode') ? '#334155' : '#e2e8f0'
+                    },
+                    pointLabels: {
+                        color: document.body.classList.contains('dark-mode') ? '#f8fafc' : '#64748b'
+                    },
                     suggestedMin: 0,
                     suggestedMax: 100,
-                    ticks: { stepSize: 20 }
+                    ticks: { 
+                        stepSize: 20,
+                        backdropColor: 'transparent',
+                        color: document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b'
+                    }
                 }
             },
             plugins: {
@@ -231,10 +244,14 @@ function initCharts(qualityData = null, trustData = null) {
                 y: {
                     beginAtZero: true,
                     max: 100,
-                    title: { display: true, text: 'Score' }
+                    title: { display: true, text: 'Score', color: document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b' },
+                    ticks: { color: document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b' },
+                    grid: { color: document.body.classList.contains('dark-mode') ? '#334155' : '#e2e8f0' }
                 },
                 x: {
+                    grid: { color: document.body.classList.contains('dark-mode') ? '#334155' : '#e2e8f0' },
                     ticks: {
+                        color: document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b',
                         callback: function (val, index) {
                             const label = this.getLabelForValue(val);
                             return label.length > 12 ? label.substr(0, 10) + '..' : label;
@@ -764,6 +781,26 @@ function setupEventListeners() {
         });
     }
 
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        // Load preference
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+            document.body.classList.add('dark-mode');
+            themeToggle.innerText = '☀️';
+        }
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark-mode');
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            themeToggle.innerText = isDark ? '☀️' : '🌙';
+            
+            // Re-render charts to update colors with new theme context
+            updateDashboardMetrics();
+        });
+    }
 }
 
 async function sendMessage() {

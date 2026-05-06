@@ -22,8 +22,11 @@
 
     <header>
         <div class="logo" id="logo-home" style="cursor: pointer;">InsightDB</div>
-        <div class="status-indicator">
-            System Status: <span id="system-status" class="status-pending">Initializing...</span>
+        <div class="header-right" style="display: flex; align-items: center; gap: 20px;">
+            <button id="theme-toggle" class="icon-btn" title="Toggle Dark Mode" style="font-size: 1.2rem; cursor: pointer; background: transparent; border: none; color: var(--text-main);">🌙</button>
+            <div class="status-indicator">
+                System Status: <span id="system-status" class="status-pending">Initializing...</span>
+            </div>
         </div>
     </header>
 

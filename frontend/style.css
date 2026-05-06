@@ -1163,3 +1163,119 @@ header {
         opacity: 1;
     }
 }
+/* Dark Mode Override */
+:root.dark-mode {
+    --primary: #60a5fa;
+    --primary-hover: #93c5fd;
+    --bg-body: #0f172a;
+    --bg-sidebar: #1e293b;
+    --bg-card: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: #334155;
+}
+
+body.dark-mode {
+    color: var(--text-main);
+}
+
+body.dark-mode, 
+body.dark-mode .auth-container,
+body.dark-mode header {
+    background-color: var(--bg-body);
+}
+
+body.dark-mode .auth-card,
+body.dark-mode .card,
+body.dark-mode .sidebar,
+body.dark-mode .data-table,
+body.dark-mode .ai-box,
+body.dark-mode .trust-badge {
+    background-color: var(--bg-card);
+    border-color: var(--border);
+}
+
+body.dark-mode input,
+body.dark-mode .google-btn {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    border-color: var(--border);
+}
+
+body.dark-mode .data-table th,
+body.dark-mode .data-table td {
+    border-color: var(--border);
+}
+body.dark-mode .data-table th {
+    background-color: var(--bg-body);
+}
+
+body.dark-mode .feature-item {
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: var(--border);
+}
+
+body.dark-mode .landing-container {
+    background: radial-gradient(circle at top right, rgba(96, 165, 250, 0.05), transparent);
+}
+
+body.dark-mode .main-content {
+    background-color: #0b1120;
+}
+
+body.dark-mode .tab-btn,
+body.dark-mode .auth-tab-btn {
+    color: var(--text-muted);
+}
+body.dark-mode .tab-btn.active,
+body.dark-mode .auth-tab-btn.active {
+    color: var(--primary);
+}
+body.dark-mode .doc-item h4,
+body.dark-mode .doc-main-desc,
+body.dark-mode .chart-card h3,
+body.dark-mode .field-group label {
+    color: var(--text-main);
+}
+body.dark-mode .entity-tag {
+    background-color: rgba(96, 165, 250, 0.1);
+    border-color: rgba(96, 165, 250, 0.2);
+}
+body.dark-mode .nav-item:hover,
+body.dark-mode #table-list li:hover {
+    background-color: var(--border);
+}
+body.dark-mode .nav-item.active,
+body.dark-mode #table-list li.active {
+    background-color: rgba(96, 165, 250, 0.1);
+}
+body.dark-mode .chat-panel {
+    background-color: var(--bg-card);
+    border-color: var(--border);
+}
+body.dark-mode .chat-input-area {
+    background-color: var(--bg-sidebar);
+    border-color: var(--border);
+}
+body.dark-mode .msg.bot {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+}
+/* Custom Scrollbar for Dark Mode */
+body.dark-mode ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+    background: var(--bg-body);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 5px;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}

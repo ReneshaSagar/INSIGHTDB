@@ -12,7 +12,7 @@ class SchemaAnalyzer:
         
         for table_name in tables:
             # Get Row Count via SQL
-            res = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name}")
+            res = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\"")
             row_count = res[0][0] if res else 0
 
             table_info = {
@@ -25,18 +25,18 @@ class SchemaAnalyzer:
 
             # Get Schema Info via SQLite PRAGMA
             # Returns: cid, name, type, notnull, dflt_value, pk
-            columns_info = self.data_loader.execute_query(f"PRAGMA table_info({table_name})")
+            columns_info = self.data_loader.execute_query(f"PRAGMA table_info(\"{table_name}\")")
 
             for col_row in columns_info:
                 col = col_row[1]
                 col_type = col_row[2]
                 
                 # Get Unique Count via SQL
-                res_unique = self.data_loader.execute_query(f"SELECT COUNT(DISTINCT \"{col}\") FROM {table_name}")
+                res_unique = self.data_loader.execute_query(f"SELECT COUNT(DISTINCT \"{col}\") FROM \"{table_name}\"")
                 unique_count = res_unique[0][0] if res_unique else 0
                 
                 # Get Null Count via SQL
-                res_null = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name} WHERE \"{col}\" IS NULL")
+                res_null = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\" WHERE \"{col}\" IS NULL")
                 null_count = res_null[0][0] if res_null else 0
 
                 is_numeric = any(t in col_type.upper() for t in ['INT', 'REAL', 'FLOAT', 'NUM'])

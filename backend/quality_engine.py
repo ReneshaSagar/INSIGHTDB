@@ -34,7 +34,7 @@ class QualityEngine:
                 "sub_scores": {}
             }
             
-            res_total = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name}")
+            res_total = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\"")
             total_rows = res_total[0][0] if res_total else 0
             
             if total_rows == 0:
@@ -50,7 +50,7 @@ class QualityEngine:
             total_cells = total_rows * len(cols_info)
             total_nulls = 0
             for col in cols_info:
-                res_null = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name} WHERE \"{col['name']}\" IS NULL")
+                res_null = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\" WHERE \"{col['name']}\" IS NULL")
                 if res_null: total_nulls += res_null[0][0]
                 
             completeness = (total_cells - total_nulls) / total_cells if total_cells > 0 else 0
@@ -90,8 +90,8 @@ class QualityEngine:
                             # SQL LEFT JOIN to find orphans
                             q = f"""
                             SELECT COUNT(*) 
-                            FROM {table_name} child
-                            LEFT JOIN {target_table_name} parent 
+                            FROM \"{table_name}\" child
+                            LEFT JOIN \"{target_table_name}\" parent 
                             ON child."{col}" = parent."{target_pk}"
                             WHERE child."{col}" IS NOT NULL AND parent."{target_pk}" IS NULL
                             """
@@ -121,11 +121,11 @@ class QualityEngine:
                     num_numeric_cols += 1
                     
                     # Get AVG and STD using SQLite
-                    res_avg = self.data_loader.execute_query(f"SELECT AVG(\"{col}\") FROM {table_name} WHERE \"{col}\" IS NOT NULL")
+                    res_avg = self.data_loader.execute_query(f"SELECT AVG(\"{col}\") FROM \"{table_name}\" WHERE \"{col}\" IS NOT NULL")
                     mean = res_avg[0][0] if res_avg and res_avg[0][0] is not None else 0
                     
                     # Calculate variance/std manually since SQLite lacks STDDEV
-                    res_var = self.data_loader.execute_query(f"SELECT AVG((\"{col}\" - {mean}) * (\"{col}\" - {mean})) FROM {table_name} WHERE \"{col}\" IS NOT NULL")
+                    res_var = self.data_loader.execute_query(f"SELECT AVG((\"{col}\" - {mean}) * (\"{col}\" - {mean})) FROM \"{table_name}\" WHERE \"{col}\" IS NOT NULL")
                     variance = res_var[0][0] if res_var and res_var[0][0] is not None else 0
                     std = np.sqrt(variance)
                     
@@ -135,7 +135,7 @@ class QualityEngine:
                     is_unsigned = policy.get("is_unsigned", True)
                     
                     # Check Negatives via SQL
-                    res_negs = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name} WHERE \"{col}\" < 0")
+                    res_negs = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\" WHERE \"{col}\" < 0")
                     negs = res_negs[0][0] if res_negs else 0
                     
                     if negs > 0 and is_unsigned:
@@ -145,7 +145,7 @@ class QualityEngine:
                     # Range check via SQL
                     p_range = policy.get("range")
                     if p_range and len(p_range) == 2:
-                        res_out = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name} WHERE \"{col}\" < {p_range[0]} OR \"{col}\" > {p_range[1]}")
+                        res_out = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\" WHERE \"{col}\" < {p_range[0]} OR \"{col}\" > {p_range[1]}")
                         out_of_range = res_out[0][0] if res_out else 0
                         if out_of_range > 0:
                             table_metrics["issues"].append(f"Value range violation in {col} (expected {p_range})")
@@ -155,7 +155,7 @@ class QualityEngine:
                     if std > 0:
                         lower_bound = mean - (3 * std)
                         upper_bound = mean + (3 * std)
-                        res_z = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name} WHERE \"{col}\" < {lower_bound} OR \"{col}\" > {upper_bound}")
+                        res_z = self.data_loader.execute_query(f"SELECT COUNT(*) FROM \"{table_name}\" WHERE \"{col}\" < {lower_bound} OR \"{col}\" > {upper_bound}")
                         outliers = res_z[0][0] if res_z else 0
                         total_outliers += outliers
                         if outliers / total_rows > 0.05:
@@ -177,7 +177,7 @@ class QualityEngine:
                     q = f"""
                     SELECT COUNT(*) FROM (
                         SELECT "{col}", COUNT(*) * 1.0 / {total_rows} as freq 
-                        FROM {table_name} 
+                        FROM \"{table_name}\" 
                         WHERE "{col}" IS NOT NULL 
                         GROUP BY "{col}" 
                         HAVING freq < 0.01
@@ -204,7 +204,7 @@ class QualityEngine:
                     col_names = [c["name"] for c in cols_info]
                     if before_col in col_names and after_col in col_names:
                         # SQLite datetime string comparison
-                        q = f"SELECT COUNT(*) FROM {table_name} WHERE \"{before_col}\" > \"{after_col}\" AND \"{before_col}\" IS NOT NULL AND \"{after_col}\" IS NOT NULL"
+                        q = f"SELECT COUNT(*) FROM \"{table_name}\" WHERE \"{before_col}\" > \"{after_col}\" AND \"{before_col}\" IS NOT NULL AND \"{after_col}\" IS NOT NULL"
                         try:
                             res_seq = self.data_loader.execute_query(q)
                             violations = res_seq[0][0] if res_seq else 0
@@ -240,7 +240,7 @@ class QualityEngine:
                 col = c["name"]
                 if 'date' in col.lower() or 'time' in col.lower() or c["classification"] == "timestamp":
                     try:
-                        res = self.data_loader.execute_query(f"SELECT MAX(\"{col}\") FROM {table_name}")
+                        res = self.data_loader.execute_query(f"SELECT MAX(\"{col}\") FROM \"{table_name}\"")
                         if res and res[0][0]:
                             tm = pd.to_datetime(res[0][0], errors='coerce')
                             if pd.notnull(tm) and tm > global_max_date: 
@@ -254,7 +254,7 @@ class QualityEngine:
             col = c["name"]
             if 'date' in col.lower() or 'time' in col.lower() or c["classification"] == "timestamp":
                 try:
-                    res = self.data_loader.execute_query(f"SELECT MAX(\"{col}\") FROM {table_name}")
+                    res = self.data_loader.execute_query(f"SELECT MAX(\"{col}\") FROM \"{table_name}\"")
                     if res and res[0][0]:
                         tm = pd.to_datetime(res[0][0], errors='coerce')
                         if pd.notnull(tm) and (table_max is None or tm > table_max): 

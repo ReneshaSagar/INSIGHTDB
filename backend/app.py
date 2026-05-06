@@ -215,14 +215,14 @@ def get_outlier_reasoning():
         
     try:
         # SQL DBMS Query: Fetch the specific row using LIMIT and OFFSET
-        q = f"SELECT * FROM {table_name} LIMIT 1 OFFSET {row_index}"
+        q = f"SELECT * FROM \"{table_name}\" LIMIT 1 OFFSET {row_index}"
         res = data_loader.execute_query(q)
         
         if not res:
             return jsonify({"error": "Row not found."}), 404
             
         # Get column names to construct the dictionary
-        pragma_res = data_loader.execute_query(f"PRAGMA table_info({table_name})")
+        pragma_res = data_loader.execute_query(f"PRAGMA table_info(\"{table_name}\")")
         col_names = [col[1] for col in pragma_res]
         
         row = dict(zip(col_names, res[0]))

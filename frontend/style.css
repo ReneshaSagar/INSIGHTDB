@@ -285,10 +285,9 @@ header {
     border-color: #cbd5e1;
 }
 
-.google-btn img {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
+.google-btn svg {
+    margin-right: 12px;
+    flex-shrink: 0;
 }
 
 .landing-container {
@@ -476,6 +475,43 @@ header {
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Charts Section */
+.charts-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 24px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+    .charts-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chart-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+}
+
+.chart-card h3 {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+.chart-wrapper {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .metric-card {

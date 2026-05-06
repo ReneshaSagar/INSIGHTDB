@@ -154,6 +154,105 @@ async function handleFileUpload(event, append = false) {
 }
 
 let currentTable = null;
+let qualityChart = null;
+let trustChart = null;
+
+function initCharts(qualityData = null, trustData = null) {
+    const radarCtx = document.getElementById('quality-radar-chart');
+    const barCtx = document.getElementById('trust-bar-chart');
+
+    if (!radarCtx || !barCtx) return;
+
+    // Destroy existing charts if they exist
+    if (qualityChart) qualityChart.destroy();
+    if (trustChart) trustChart.destroy();
+
+    // 1. Radar Chart: Quality Vector
+    const radarLabels = ['Completeness', 'ID Health', 'Integrity', 'Accuracy', 'Freshness'];
+    const radarValues = qualityData ? [
+        qualityData.completeness,
+        qualityData.identifier_health,
+        qualityData.fk_integrity,
+        qualityData.numeric_sanity,
+        qualityData.freshness
+    ] : [0, 0, 0, 0, 0];
+
+    qualityChart = new Chart(radarCtx.getContext('2d'), {
+        type: 'radar',
+        data: {
+            labels: radarLabels,
+            datasets: [{
+                label: 'System Score',
+                data: radarValues,
+                backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                borderColor: '#2563eb',
+                pointBackgroundColor: '#2563eb',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#2563eb'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { display: true },
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: { stepSize: 20 }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // 2. Bar Chart: Trust Distribution
+    const barLabels = trustData ? Object.keys(trustData) : [];
+    const barValues = trustData ? Object.values(trustData) : [];
+
+    trustChart = new Chart(barCtx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: barLabels,
+            datasets: [{
+                label: 'Trust Score',
+                data: barValues,
+                backgroundColor: barValues.map(v => v >= 80 ? '#10b981' : (v >= 50 ? '#f59e0b' : '#ef4444')),
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: { display: true, text: 'Score' }
+                },
+                x: {
+                    ticks: {
+                        callback: function (val, index) {
+                            const label = this.getLabelForValue(val);
+                            return label.length > 12 ? label.substr(0, 10) + '..' : label;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `Trust Score: ${ctx.raw}%`
+                    }
+                }
+            }
+        }
+    });
+}
 
 function switchView(view) {
     const auth = document.getElementById('auth-view');
@@ -377,6 +476,9 @@ async function updateDashboardMetrics() {
                 entityContainer.appendChild(span);
             });
         }
+
+        // Initialize Charts with new data
+        initCharts(data.quality_vector, data.table_scores);
     } catch (e) {
         console.error("Error updating dashboard:", e);
     }
@@ -662,11 +764,6 @@ function setupEventListeners() {
         });
     }
 
-    // AI Analysis Trigger
-    const genAnalysisBtn = document.getElementById('gen-analysis-btn');
-    if (genAnalysisBtn) {
-        genAnalysisBtn.addEventListener('click', generateAIAnalysis);
-    }
 }
 
 async function sendMessage() {
@@ -722,52 +819,4 @@ function addMessage(text, sender) {
     div.innerText = text;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
-}
-async function generateAIAnalysis() {
-    if (!currentTable) return;
-
-    const btn = document.getElementById('gen-analysis-btn');
-    const content = document.getElementById('ai-summary-content');
-
-    btn.disabled = true;
-    btn.innerText = "Generating...";
-    content.innerHTML = '<div class="loading-spinner">Analyzing data logic...</div>';
-
-    try {
-        const res = await fetch(`${API_BASE}/summary/${currentTable}`);
-        const data = await res.json();
-
-        if (data.error) throw new Error(data.error);
-
-        content.innerHTML = `
-            <div class="ai-summary-result">
-                <div class="ai-classification badge">${data.classification || 'General'}</div>
-                <p class="ai-desc">**Summary**: ${data.summary}</p>
-                
-                <div class="ai-detail-item">
-                    <strong>Business Impact</strong>
-                    <p>${data.impact}</p>
-                </div>
-                
-                <div class="ai-detail-item">
-                    <strong>Logical Risks</strong>
-                    <p>${data.risks}</p>
-                </div>
-
-                <div class="ai-detail-item">
-                    <strong>Key Columns</strong>
-                    <div class="entity-tags">
-                        ${(data.important_columns || []).map(col => `<span class="entity-tag">${col}</span>`).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
-
-    } catch (e) {
-        console.error("AI Analysis Error:", e);
-        content.innerHTML = `<p class="error">**Connectivity Issue**: ${e.message}</p>`;
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Generate Analysis";
-    }
 }

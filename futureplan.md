@@ -1,6 +1,6 @@
-# InsightDB Future Roadmap 🚀
 
-This document outlines planned upgrades and features designed to move InsightDB from a hackathon MVP to a mature, enterprise-grade data intelligence platform.
+
+
 
 ## 1. AI-Driven Dynamic Audit Rules
 **Goal**: Eliminate false positives in data quality audits (e.g., flagging Latitude/Longitude as "invalid negative values").
@@ -22,3 +22,4 @@ This document outlines planned upgrades and features designed to move InsightDB 
 
 ## 4. Multi-Source Integration
 - **Idea**: Support connecting to live SQL databases (PostgreSQL, MySQL, Snowflake) rather than just static CSV files.
+    

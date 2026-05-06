@@ -11,7 +11,7 @@ location = "us-central1"
 
 try:
     vertexai.init(project=project, location=location)
-    model = GenerativeModel("gemini-1.5-flash") # 2.5 might not be here yet
+    model = GenerativeModel("gemini-2.5-flash") # 2.5 might not be here yet
     response = model.generate_content("Say hello")
     print(f"Success: {response.text}")
 except Exception as e:

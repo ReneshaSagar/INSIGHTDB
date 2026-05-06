@@ -1,30 +1,46 @@
-import pandas as pd
-
 class SchemaAnalyzer:
-    def __init__(self, tables):
+    def __init__(self, data_loader):
         """
-        :param tables: Dictionary of {table_name: pd.DataFrame}
+        :param data_loader: Reference to DataLoader to execute SQL queries.
         """
-        self.tables = tables
+        self.data_loader = data_loader
         self.schema = {}
 
     def analyze(self):
-        """analyzes all loaded tables and returns a schema dictionary."""
-        for table_name, df in self.tables.items():
+        """analyzes all loaded tables and returns a schema dictionary using SQL."""
+        tables = self.data_loader.get_all_table_names()
+        
+        for table_name in tables:
+            # Get Row Count via SQL
+            res = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name}")
+            row_count = res[0][0] if res else 0
+
             table_info = {
                 "name": table_name,
-                "row_count": len(df),
+                "row_count": row_count,
                 "columns": [],
                 "potential_keys": [],
                 "potential_foreign_keys": []
             }
 
-            for col in df.columns:
-                col_type = str(df[col].dtype)
-                unique_count = df[col].nunique()
-                null_count = int(df[col].isnull().sum())
-                is_numeric = pd.api.types.is_numeric_dtype(df[col])
-                is_datetime = 'date' in col.lower() or 'time' in col.lower() or pd.api.types.is_datetime64_any_dtype(df[col])
+            # Get Schema Info via SQLite PRAGMA
+            # Returns: cid, name, type, notnull, dflt_value, pk
+            columns_info = self.data_loader.execute_query(f"PRAGMA table_info({table_name})")
+
+            for col_row in columns_info:
+                col = col_row[1]
+                col_type = col_row[2]
+                
+                # Get Unique Count via SQL
+                res_unique = self.data_loader.execute_query(f"SELECT COUNT(DISTINCT \"{col}\") FROM {table_name}")
+                unique_count = res_unique[0][0] if res_unique else 0
+                
+                # Get Null Count via SQL
+                res_null = self.data_loader.execute_query(f"SELECT COUNT(*) FROM {table_name} WHERE \"{col}\" IS NULL")
+                null_count = res_null[0][0] if res_null else 0
+
+                is_numeric = any(t in col_type.upper() for t in ['INT', 'REAL', 'FLOAT', 'NUM'])
+                is_datetime = 'date' in col.lower() or 'time' in col.lower() or 'DATETIME' in col_type.upper()
                 
                 # Context-Aware Classification
                 classification = "other"
@@ -34,7 +50,7 @@ class SchemaAnalyzer:
                     classification = "timestamp"
                 elif is_numeric:
                     classification = "numeric"
-                elif df[col].dtype == "object" and unique_count < 50:
+                elif not is_numeric and unique_count < 50:
                     classification = "categorical"
                 
                 col_data = {
@@ -47,15 +63,14 @@ class SchemaAnalyzer:
                 table_info["columns"].append(col_data)
 
                 # Potential Primary Key Inference
-                if classification == "identifier" and unique_count == len(df) and null_count == 0:
+                if classification == "identifier" and unique_count == row_count and null_count == 0 and row_count > 0:
                     table_info["potential_keys"].append(col)
 
                 # Potential Foreign Key Inference
-                if classification == "identifier" and not (unique_count == len(df) and null_count == 0):
-                    # Look for targets: e.g. customer_id -> olist_customers_dataset
-                    # We strip 'olist_' and '_dataset' to match heuristics or just check substrings
+                if classification == "identifier" and not (unique_count == row_count and null_count == 0):
+                    # Look for targets
                     potential_targets = []
-                    for t in self.tables.keys():
+                    for t in tables:
                         if t == table_name: continue
                         clean_t = t.replace("olist_", "").replace("_dataset", "")
                         clean_col = col.replace("_id", "")
@@ -74,3 +89,4 @@ class SchemaAnalyzer:
 
     def get_table_schema(self, table_name):
         return self.schema.get(table_name)
+

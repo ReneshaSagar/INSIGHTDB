@@ -45,7 +45,7 @@ def _perform_init(data_dir=None, reset=True):
     if not tables:
         return False
         
-    schema_analyzer = SchemaAnalyzer(tables)
+    schema_analyzer = SchemaAnalyzer(data_loader)
     schema = schema_analyzer.analyze()
     
     if ai_service is None:
@@ -55,7 +55,7 @@ def _perform_init(data_dir=None, reset=True):
     print("Generating AI validation policy...")
     validation_policy = ai_service.generate_validation_policy(schema)
     
-    quality_engine = QualityEngine(tables, schema, validation_policy=validation_policy)
+    quality_engine = QualityEngine(data_loader, schema, validation_policy=validation_policy)
     quality_engine.compute_metrics()
     
     print("Generating AI project overview...")
@@ -153,11 +153,36 @@ def get_dashboard_metrics():
     avg_score = sum(m['trust_score'] for m in metrics.values()) / len(metrics)
     total_rows = sum(len(df) for df in data_loader.tables.values())
     
+    # Aggregated Sub-scores for Radar Chart
+    sub_scores = {
+        "identifier_health": 0,
+        "fk_integrity": 0,
+        "completeness": 0,
+        "numeric_sanity": 0,
+        "freshness": 0
+    }
+    
+    for m in metrics.values():
+        sub_scores["identifier_health"] += m["sub_scores"].get("identifier_health", 0)
+        sub_scores["fk_integrity"] += m["sub_scores"].get("fk_integrity", 0)
+        sub_scores["completeness"] += m.get("completeness", 0)
+        sub_scores["numeric_sanity"] += m["sub_scores"].get("numeric_sanity", 0)
+        sub_scores["freshness"] += m.get("freshness", 0)
+        
+    num_tables = len(metrics)
+    for key in sub_scores:
+        sub_scores[key] = round(sub_scores[key] / num_tables, 2)
+
+    # Detailed table scores for Bar Chart
+    table_scores = {name: m["trust_score"] for name, m in metrics.items()}
+    
     return jsonify({
         "avg_trust_score": round(avg_score, 2),
         "total_tables": len(data_loader.tables),
         "total_rows": total_rows,
-        "project_info": project_overview
+        "project_info": project_overview,
+        "quality_vector": sub_scores,
+        "table_scores": table_scores
     })
 
 @app.route('/api/schema', methods=['GET'])
@@ -177,19 +202,6 @@ def get_quality(table_name):
         
     return jsonify(metrics)
 
-@app.route('/api/summary/<table_name>', methods=['GET'])
-def get_table_summary(table_name):
-    if not ai_service or not quality_engine:
-        return jsonify({"error": "AI Service not initialized."}), 400
-    
-    schema = schema_analyzer.schema.get(table_name)
-    metrics = quality_engine.metrics.get(table_name)
-    
-    if not schema or not metrics:
-        return jsonify({"error": "Table not found."}), 404
-    
-    summary = ai_service.generate_table_summary(table_name, schema, metrics)
-    return jsonify(summary)
 
 @app.route('/api/outlier-reasoning', methods=['POST'])
 def get_outlier_reasoning():
@@ -201,12 +213,21 @@ def get_outlier_reasoning():
     if not all([table_name, column_name, row_index is not None]):
         return jsonify({"error": "Missing parameters."}), 400
         
-    df = data_loader.tables.get(table_name)
-    if df is None: return jsonify({"error": "Table not found."}), 404
-    
     try:
-        row = df.iloc[row_index].to_dict()
+        # SQL DBMS Query: Fetch the specific row using LIMIT and OFFSET
+        q = f"SELECT * FROM {table_name} LIMIT 1 OFFSET {row_index}"
+        res = data_loader.execute_query(q)
+        
+        if not res:
+            return jsonify({"error": "Row not found."}), 404
+            
+        # Get column names to construct the dictionary
+        pragma_res = data_loader.execute_query(f"PRAGMA table_info({table_name})")
+        col_names = [col[1] for col in pragma_res]
+        
+        row = dict(zip(col_names, res[0]))
         value = row.get(column_name)
+        
         reason = ai_service.reason_outliers(table_name, column_name, row, value)
         return jsonify({"reason": reason})
     except Exception as e:

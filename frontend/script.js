@@ -1,6 +1,6 @@
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
-    : 'https://insightdb-renesha-s-projects.vercel.app/api';
+    : 'https://renesha08-insightdb-backend.hf.space/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     initSystem();

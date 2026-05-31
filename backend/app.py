@@ -1,10 +1,14 @@
+import sys
+import os
+# Inject backend directory into python search path for Vercel serverless compatibility
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from data_loader import DataLoader
 from schema_analyzer import SchemaAnalyzer
 from quality_engine import QualityEngine
 from ai_service import AIService
-import os
 import json
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')

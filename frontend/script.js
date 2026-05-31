@@ -1,6 +1,6 @@
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
-    : 'https://insightdb-backend.vercel.app/api'; // Replace with your actual Vercel backend URL once deployed!
+    : 'https://insightdb-renesha-s-projects.vercel.app/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     initSystem();

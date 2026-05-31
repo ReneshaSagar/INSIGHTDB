@@ -63,8 +63,13 @@ class AIService:
                 self._last_error = "Service Account JSON not found in ENV or files."
 
     def _log(self, message):
-        with open(self.log_file, "a") as f:
-            f.write(f"[{datetime.datetime.now()}] {message}\n")
+        print(f"[{datetime.datetime.now()}] {message}")
+        if "VERCEL" not in os.environ:
+            try:
+                with open(self.log_file, "a") as f:
+                    f.write(f"[{datetime.datetime.now()}] {message}\n")
+            except Exception:
+                pass
 
     def _get_auth_headers(self):
         """Generates headers strictly using Service Account OAuth2 token."""

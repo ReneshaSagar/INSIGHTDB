@@ -12,9 +12,16 @@ CORS(app)
 
 # Global State
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+if "VERCEL" in os.environ:
+    UPLOAD_FOLDER = "/tmp/uploads"
+else:
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+
 if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+    try:
+        os.makedirs(UPLOAD_FOLDER)
+    except Exception as e:
+        print(f"Failed to create uploads directory: {e}")
 
 data_loader = DataLoader() # Assuming data is in ../data or defined in loader
 schema_analyzer = None

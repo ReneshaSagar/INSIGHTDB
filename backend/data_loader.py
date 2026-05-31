@@ -8,7 +8,11 @@ class DataLoader:
         self.data_dir = data_dir
         self.tables = {}
         # Connect to SQLite (creates a file-based database)
-        self.conn = sqlite3.connect('insightdb.db', check_same_thread=False)
+        if "VERCEL" in os.environ:
+            db_path = "/tmp/insightdb.db"
+        else:
+            db_path = "insightdb.db"
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
 
     def load_data(self, data_dir=None, reset=True):
         """Loads all CSV files from the data directory into Pandas DataFrames and SQLite."""

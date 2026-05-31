@@ -1,4 +1,4 @@
-# Python
+# Python & Caching
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,34 +21,40 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# Virtual Environments
 venv/
 ENV/
+.venv/
 
-# Data
+# Environment Secrets
+.env
+.flaskenv
+*.env
+
+# SQLite Database
+*.db
+insightdb.db
+
+# User Uploaded Data & Raw Datasets
+uploads/
+backend/uploads/
 data/
 *.csv
 *.xlsx
 
-# Firebase/Google Keys
+# Google Service Accounts & Keys (Highly Sensitive!)
 *.json
 firebase-config.js
 
-# Env
-.env
-.flaskenv
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
+# IDEs & System Files
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 *.swp
 *.swo
 
-# Project specific
+# Temporary/Cache Directories
 tmp/
 .gemini/
 brain/

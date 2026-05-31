@@ -16,36 +16,51 @@ class AIService:
         self.project_id = "insightdb-488114"
         self.location = "us-central1"
         
-        # Determine absolute path for the service account key
-        sa_path = None
-        possible_paths = [
-            os.path.join(os.getcwd(), self.sa_key_name),
-            os.path.join(os.path.dirname(__file__), self.sa_key_name),
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), self.sa_key_name),
-            f"C:\\Users\\acer\\Desktop\\hackfest-2.0\\{self.sa_key_name}"
-        ]
-        
-        for p in possible_paths:
-            if os.path.exists(p):
-                sa_path = p
-                self._log(f"Found Service Account key at: {p}")
-                break
-        
-        if sa_path:
+        # Check for service account JSON in environment variable first (secure production)
+        sa_json_env = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+        if sa_json_env:
             try:
-                # Strictly use 'https://www.googleapis.com/auth/cloud-platform' scope as requested
-                self.credentials = service_account.Credentials.from_service_account_file(
-                    sa_path,
+                sa_info = json.loads(sa_json_env)
+                self.credentials = service_account.Credentials.from_service_account_info(
+                    sa_info,
                     scopes=['https://www.googleapis.com/auth/cloud-platform']
                 )
                 self.project_id = self.credentials.project_id
-                self._log(f"Service Account Loaded. Project: {self.project_id}")
+                self._log(f"Service Account Loaded from ENV. Project: {self.project_id}")
             except Exception as e:
-                self._log(f"Service Account Auth Error: {e}")
-                self._last_error = f"Auth Init Error: {e}"
-        else:
-            self._log("CRITICAL: Service Account JSON not found.")
-            self._last_error = "Service Account JSON not found."
+                self._log(f"Service Account Auth Error from ENV: {e}")
+                self._last_error = f"Auth Init Error from ENV: {e}"
+        
+        # Fallback to local files if environment variable is not present (local dev)
+        if not self.credentials:
+            sa_path = None
+            possible_paths = [
+                os.path.join(os.getcwd(), self.sa_key_name),
+                os.path.join(os.path.dirname(__file__), self.sa_key_name),
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), self.sa_key_name),
+                f"C:\\Users\\acer\\Desktop\\hackfest-2.0\\{self.sa_key_name}"
+            ]
+            
+            for p in possible_paths:
+                if os.path.exists(p):
+                    sa_path = p
+                    self._log(f"Found Service Account key at: {p}")
+                    break
+            
+            if sa_path:
+                try:
+                    self.credentials = service_account.Credentials.from_service_account_file(
+                        sa_path,
+                        scopes=['https://www.googleapis.com/auth/cloud-platform']
+                    )
+                    self.project_id = self.credentials.project_id
+                    self._log(f"Service Account Loaded from File. Project: {self.project_id}")
+                except Exception as e:
+                    self._log(f"Service Account Auth Error from File: {e}")
+                    self._last_error = f"Auth Init Error from File: {e}"
+            else:
+                self._log("CRITICAL: Service Account JSON not found in ENV or files.")
+                self._last_error = "Service Account JSON not found in ENV or files."
 
     def _log(self, message):
         with open(self.log_file, "a") as f:

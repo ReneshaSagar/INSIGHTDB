@@ -1,0 +1,70 @@
+# Python & Caching
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+ENV/
+.venv/
+
+# Environment Secrets
+.env
+.flaskenv
+*.env
+
+# SQLite Database
+*.db
+*.db-journal
+insightdb.db
+
+# Hidden Sync / Drive Upload Temp files
+.tmp.driveupload/
+.tmp.driveupload
+.tmp/
+driveupload/
+
+# Exclude MP4 video files (Hugging Face blocks binary video files unless LFS is used)
+*.mp4
+
+# User Uploaded Data & Raw Datasets
+uploads/
+backend/uploads/
+data/
+*.csv
+*.xlsx
+
+# Google Service Accounts & Keys (Highly Sensitive!)
+*.json
+firebase-config.js
+
+# IDEs & System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Temporary/Cache Directories
+tmp/
+.gemini/
+brain/

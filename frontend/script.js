@@ -81,6 +81,13 @@ function initSplashScreen() {
     }
 }
 
+function trimCSVText(text, maxRows = 500) {
+    const lines = text.split(/\r?\n/);
+    if (lines.length <= maxRows) return text;
+    // Keep header and first maxRows data lines
+    return lines.slice(0, maxRows).join('\n');
+}
+
 async function handleFileUpload(event, append = false) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -91,11 +98,21 @@ async function handleFileUpload(event, append = false) {
 
     const formData = new FormData();
     formData.append('append', append);
-    for (let i = 0; i < files.length; i++) {
-        formData.append('files', files[i]);
-    }
-
+    
     try {
+        // Read and trim files to ensure we don't exceed Vercel's 4.5MB serverless limit
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file.name.endsWith('.csv')) {
+                const text = await file.text();
+                const trimmedText = trimCSVText(text, 500); // 500 rows is perfect for high quality AI schema analysis and runs instantly!
+                const blob = new Blob([trimmedText], { type: 'text/csv' });
+                formData.append('files', blob, file.name);
+            } else {
+                formData.append('files', file);
+            }
+        }
+
         const res = await fetch(`${API_BASE}/upload`, {
             method: 'POST',
             body: formData

@@ -1,2 +1,7 @@
+[project]
+name = "insightdb"
+version = "0.1.0"
+dependencies = []
+
 [tool.vercel]
 entrypoint = "backend.app:app"

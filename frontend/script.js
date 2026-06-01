@@ -8,6 +8,34 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAuthEventListeners();
     setupEventListeners();
 
+    // Mobile Sidebar Toggle Drawer
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.getElementById('sidebar-panel');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+
+    if (mobileMenuBtn && sidebar && sidebarBackdrop) {
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.add('open');
+            sidebarBackdrop.classList.add('active');
+        });
+
+        sidebarBackdrop.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarBackdrop.classList.remove('active');
+        });
+
+        // Also close the drawer when any navigation item is selected on mobile
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('open');
+                    sidebarBackdrop.classList.remove('active');
+                }
+            });
+        });
+    }
+
     // Home Navigation
     document.getElementById('logo-home').addEventListener('click', () => {
         navigateTo('dashboard');

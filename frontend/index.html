@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InsightDB - AI Data Intelligence</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.3">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -21,6 +21,9 @@
     </div>
 
     <header>
+        <button id="mobile-menu-btn" class="mobile-menu-btn" title="Toggle Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
         <div class="logo" id="logo-home" style="cursor: pointer;">InsightDB</div>
         <div class="header-right" style="display: flex; align-items: center; gap: 20px;">
             <div class="theme-switcher" style="display: inline-flex; align-items: center; background: var(--border); padding: 3px; border-radius: 20px; border: 1px solid var(--border); margin-right: 5px;">
@@ -137,6 +140,8 @@
     </section>
 
     <div class="container hidden" id="app-container">
+        <!-- Sidebar Backdrop for Mobile -->
+        <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
 
         <!-- Sidebar / Table List -->
         <aside class="sidebar" id="sidebar-panel">
@@ -456,7 +461,7 @@
             signOut
         };
     </script>
-    <script src="script.js"></script>
+    <script src="script.js?v=2.3"></script>
 </body>
 
 </html>

@@ -131,7 +131,10 @@ class QualityEngine:
                     
                     table_metrics["column_stats"][col] = {"mean": float(mean), "std": float(std)}
                     
-                    policy = self.validation_policy.get(table_name, {}).get(col, {})
+                    table_policy = self.validation_policy.get(table_name) or {}
+                    policy = table_policy.get(col) or {}
+                    if not isinstance(policy, dict):
+                        policy = {}
                     is_unsigned = policy.get("is_unsigned", True)
                     
                     # Check Negatives via SQL
@@ -202,10 +205,13 @@ class QualityEngine:
             table_metrics["sub_scores"]["freshness"] = freshness_score
 
             # 7. AI Sequence Rules (Contextual Integrity) via SQL
-            table_policy = self.validation_policy.get(table_name, {})
+            table_policy = self.validation_policy.get(table_name) or {}
             sequence_penalty = 0
-            for col, policy in table_policy.items():
-                rules = policy.get("sequence_rules", [])
+            if isinstance(table_policy, dict):
+                for col, policy in table_policy.items():
+                    if not policy or not isinstance(policy, dict):
+                        continue
+                    rules = policy.get("sequence_rules", [])
                 for rule in rules:
                     before_col = rule.get("before")
                     after_col = rule.get("after")

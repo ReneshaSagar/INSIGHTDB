@@ -118,11 +118,17 @@
                 </h3>
                 <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px;">Paste messy raw text, unformatted values, or emails. Gemini will structure it into clean, relational CSV format.</p>
                 <textarea id="normalizer-input" placeholder="Paste your messy data here (e.g. John Doe, 12-05-2024, $50 | Jane Smith | phone: 123456...)" style="width: 100%; height: 100px; border-radius: 8px; padding: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: monospace; resize: none; margin-bottom: 12px;"></textarea>
-                <button id="normalizer-btn" class="secondary-btn small-btn">⚡ Structure & Normalize Data</button>
+                <button id="normalizer-btn" class="secondary-btn small-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    Structure & Normalize Data
+                </button>
                 <div id="normalizer-output-container" class="hidden" style="margin-top: 15px;">
                     <h4 style="margin-bottom: 6px;">Structured AI Output (CSV)</h4>
                     <textarea id="normalizer-output" readonly style="width: 100%; height: 100px; border-radius: 8px; padding: 10px; background: var(--bg); border: 1px solid var(--border); color: #10b981; font-family: monospace; resize: none; margin-bottom: 12px;"></textarea>
-                    <button id="normalizer-load-btn" class="primary-btn small-btn">📂 Load this clean data directly</button>
+                    <button id="normalizer-load-btn" class="primary-btn small-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        Load this clean data directly
+                    </button>
                 </div>
             </div>
 
@@ -292,7 +298,10 @@
                     <div class="sql-input-row" style="margin-bottom: 20px;">
                         <textarea id="sql-editor" placeholder="SELECT * FROM olist_customers_dataset LIMIT 5;" style="width: 100%; height: 120px; font-family: monospace; border-radius: 8px; padding: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); resize: none; margin-bottom: 12px; font-size: 0.95rem;"></textarea>
                         <div style="display: flex; gap: 12px;">
-                            <button id="run-sql-btn" class="primary-btn">▶ Run Query</button>
+                            <button id="run-sql-btn" class="primary-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                Run Query
+                            </button>
                             <button id="clear-sql-btn" class="secondary-btn">Clear</button>
                         </div>
                     </div>

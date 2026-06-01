@@ -356,7 +356,8 @@ async function initSystem() {
     statusEl.textContent = "Checking Session...";
 
     // Handle Firebase redirect results if returning from a mobile Google sign-in redirect
-    if (window.firebaseAuth && window.firebaseAuth.getRedirectResult) {
+    if (window.firebaseAuth && window.firebaseAuth.getRedirectResult && !window.redirectChecked) {
+        window.redirectChecked = true;
         window.firebaseAuth.getRedirectResult(window.firebaseAuth.auth)
             .then((result) => {
                 if (result && result.user) {

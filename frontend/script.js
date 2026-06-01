@@ -355,6 +355,24 @@ async function initSystem() {
     const statusEl = document.getElementById('system-status');
     statusEl.textContent = "Checking Session...";
 
+    // Handle Firebase redirect results if returning from a mobile Google sign-in redirect
+    if (window.firebaseAuth && window.firebaseAuth.getRedirectResult) {
+        window.firebaseAuth.getRedirectResult(window.firebaseAuth.auth)
+            .then((result) => {
+                if (result && result.user) {
+                    console.log("Mobile Google redirect login succeeded:", result.user.email);
+                }
+            })
+            .catch((error) => {
+                console.error("Mobile Google redirect login error:", error);
+                const errorEl = document.getElementById('auth-error');
+                if (errorEl) {
+                    errorEl.innerText = error.message;
+                    errorEl.classList.remove('hidden');
+                }
+            });
+    }
+
     // Use onAuthStateChanged to handle initialization
     if (window.firebaseAuth && window.firebaseAuth.onAuthStateChanged) {
         window.firebaseAuth.onAuthStateChanged(window.firebaseAuth.auth, async (user) => {
@@ -467,11 +485,16 @@ async function handleAuthAction(type, creds = {}) {
     errorEl.classList.add('hidden');
 
     if (!window.firebaseAuth) return;
-    const { auth, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } = window.firebaseAuth;
+    const { auth, provider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword } = window.firebaseAuth;
 
     try {
         if (type === 'google') {
-            await signInWithPopup(auth, provider);
+            const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone/i.test(navigator.userAgent);
+            if (isMobile && signInWithRedirect) {
+                await signInWithRedirect(auth, provider);
+            } else {
+                await signInWithPopup(auth, provider);
+            }
         } else if (type === 'login') {
             await signInWithEmailAndPassword(auth, creds.email, creds.pass);
         } else if (type === 'signup') {

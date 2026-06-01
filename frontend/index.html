@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InsightDB - AI Data Intelligence</title>
-    <link rel="stylesheet" href="style.css?v=2.4">
+    <link rel="stylesheet" href="style.css?v=2.5">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -433,7 +433,7 @@
     <!-- Firebase Configuration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAc5e0YaVjy2PmtzFZrKyugeg4Ghq3v1AQ",
@@ -455,13 +455,15 @@
             auth,
             provider,
             signInWithPopup,
+            signInWithRedirect,
+            getRedirectResult,
             signInWithEmailAndPassword,
             createUserWithEmailAndPassword,
             onAuthStateChanged,
             signOut
         };
     </script>
-    <script src="script.js?v=2.4"></script>
+    <script src="script.js?v=2.5"></script>
 </body>
 
 </html>

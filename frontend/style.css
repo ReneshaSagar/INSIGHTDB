@@ -294,9 +294,9 @@ header {
     min-height: calc(100vh - 60px);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Start from top to prevent tall flexbox overflows overlapping the header */
     background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.05), transparent);
-    padding: 40px 24px;
+    padding: 80px 24px; /* Generous breathing room for desktop */
 }
 
 .landing-content {
@@ -311,6 +311,7 @@ header {
     background: linear-gradient(135deg, var(--text-main), var(--primary));
     -webkit-background-clip: text;
     background-clip: text;
+    color: var(--primary); /* Safe fallback if text clip fails */
     -webkit-text-fill-color: transparent;
 }
 
@@ -318,6 +319,13 @@ header {
     font-size: 1.2rem;
     color: var(--text-muted);
     margin-bottom: 40px;
+    display: none; /* Completely hidden/removed on laptop and desktop aspect ratios */
+}
+
+@media (max-width: 768px) {
+    .landing-content p {
+        display: block;
+    }
 }
 
 .upload-zone {
@@ -459,7 +467,7 @@ header {
 }
 
 .hidden {
-    display: none;
+    display: none !important; /* Force hiding, overriding any flex/block !important media overrides */
 }
 
 /* Dashboard Cards */
@@ -1750,6 +1758,7 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     }
 
     .landing-content p {
+        display: block !important; /* Show welcome line only on mobile aspect ratio */
         font-size: 0.95rem !important;
         margin-bottom: 24px !important;
         line-height: 1.4 !important;

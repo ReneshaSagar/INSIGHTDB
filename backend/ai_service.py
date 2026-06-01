@@ -16,22 +16,42 @@ class AIService:
         self.project_id = "insightdb-488114"
         self.location = "us-central1"
         
-        # Check for service account JSON in environment variable first (secure production)
-        sa_json_env = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
-        if sa_json_env:
-            try:
-                sa_info = json.loads(sa_json_env)
-                self.credentials = service_account.Credentials.from_service_account_info(
-                    sa_info,
-                    scopes=['https://www.googleapis.com/auth/cloud-platform']
-                )
-                self.project_id = self.credentials.project_id
-                self._log(f"Service Account Loaded from ENV. Project: {self.project_id}")
-            except Exception as e:
-                self._log(f"Service Account Auth Error from ENV: {e}")
-                self._last_error = f"Auth Init Error from ENV: {e}"
+        # Check for multiple service account JSONs in environment variables (secure production key rotation)
+        self.credentials_pool = []
+        self.current_key_index = 0
         
-        # Fallback to local files if environment variable is not present (local dev)
+        env_keys = [
+            "GOOGLE_SERVICE_ACCOUNT_JSON",
+            "GOOGLE_SERVICE_ACCOUNT_JSON_2",
+            "GOOGLE_SERVICE_ACCOUNT_JSON_3",
+            "GOOGLE_SERVICE_ACCOUNT_JSON_4",
+            "GOOGLE_SERVICE_ACCOUNT_JSON_5"
+        ]
+        
+        for key_name in env_keys:
+            sa_json_env = os.environ.get(key_name)
+            if sa_json_env:
+                try:
+                    sa_info = json.loads(sa_json_env)
+                    creds = service_account.Credentials.from_service_account_info(
+                        sa_info,
+                        scopes=['https://www.googleapis.com/auth/cloud-platform']
+                    )
+                    proj_id = creds.project_id
+                    self.credentials_pool.append((creds, proj_id))
+                    self._log(f"Key Rotation Pool: Loaded Service Account from {key_name}. Project: {proj_id}")
+                except Exception as e:
+                    self._log(f"Key Rotation Pool: Failed loading from {key_name}: {e}")
+                    
+        # Set active credentials
+        if self.credentials_pool:
+            self.credentials = self.credentials_pool[0][0]
+            self.project_id = self.credentials_pool[0][1]
+        else:
+            self.credentials = None
+            self.project_id = "insightdb-488114"
+        
+        # Fallback to local files if environment variable pool is empty (local dev)
         if not self.credentials:
             sa_path = None
             possible_paths = [
@@ -54,6 +74,7 @@ class AIService:
                         scopes=['https://www.googleapis.com/auth/cloud-platform']
                     )
                     self.project_id = self.credentials.project_id
+                    self.credentials_pool.append((self.credentials, self.project_id))
                     self._log(f"Service Account Loaded from File. Project: {self.project_id}")
                 except Exception as e:
                     self._log(f"Service Account Auth Error from File: {e}")
@@ -61,6 +82,18 @@ class AIService:
             else:
                 self._log("CRITICAL: Service Account JSON not found in ENV or files.")
                 self._last_error = "Service Account JSON not found in ENV or files."
+
+    def _rotate_credentials(self):
+        """Rotates to the next available credentials key in the pool."""
+        if len(self.credentials_pool) <= 1:
+            self._log("Key Rotation: No backup keys available in pool.")
+            return False
+            
+        self.current_key_index = (self.current_key_index + 1) % len(self.credentials_pool)
+        self.credentials = self.credentials_pool[self.current_key_index][0]
+        self.project_id = self.credentials_pool[self.current_key_index][1]
+        self._log(f"Key Rotation: Rotated successfully to Key #{self.current_key_index + 1} (Project: {self.project_id})")
+        return True
 
     def _log(self, message):
         print(f"[{datetime.datetime.now()}] {message}")
@@ -95,50 +128,57 @@ class AIService:
             return None
 
     def _call_gemini_rest(self, prompt, is_json=False):
-        """Strict Vertex AI REST caller using Service Account OAuth2."""
-        headers = self._get_auth_headers()
-        if not headers: 
-            return None
+        """Strict Vertex AI REST caller using Service Account OAuth2 with key rotation retry."""
+        max_retries = max(1, len(self.credentials_pool))
         
-        model_name = "gemini-2.5-flash"
-        
-        # Vertex AI Endpoint
-        url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{self.project_id}/locations/{self.location}/publishers/google/models/{model_name}:generateContent"
-
-        gen_config = {
-            "temperature": 0.3,
-            "maxOutputTokens": 4096,
-        }
-        if is_json:
-            gen_config["responseMimeType"] = "application/json"
-
-        payload = {
-            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-            "generationConfig": gen_config
-        }
-
-        try:
-            self._log("Calling AI core via Vertex AI OAuth2...")
-            response = requests.post(url, headers=headers, json=payload, timeout=30)
+        for attempt in range(max_retries):
+            headers = self._get_auth_headers()
+            if not headers: 
+                if self._rotate_credentials():
+                    continue
+                return None
             
-            if response.status_code == 200:
-                result = response.json()
-                self._log("Success")
-                return result['candidates'][0]['content']['parts'][0]['text']
-            else:
-                err_msg = f"AI Error {response.status_code}: {response.text}"
-                self._last_error = err_msg
-                self._log(err_msg)
+            model_name = "gemini-2.5-flash"
+            url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{self.project_id}/locations/{self.location}/publishers/google/models/{model_name}:generateContent"
+    
+            gen_config = {
+                "temperature": 0.3,
+                "maxOutputTokens": 4096,
+            }
+            if is_json:
+                gen_config["responseMimeType"] = "application/json"
+    
+            payload = {
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": gen_config
+            }
+    
+            try:
+                self._log(f"Calling AI core (Key #{self.current_key_index + 1}/{len(self.credentials_pool)})...")
+                response = requests.post(url, headers=headers, json=payload, timeout=30)
                 
-                if "API_KEY_SERVICE_BLOCKED" in response.text:
-                    self._last_error = "Vertex AI API blocked. Ensure API is enabled and billing is active."
-                elif "429" in response.text:
-                    self._last_error = "Quota Exceeded on Vertex AI."
+                if response.status_code == 200:
+                    result = response.json()
+                    self._log("Success")
+                    return result['candidates'][0]['content']['parts'][0]['text']
+                else:
+                    err_msg = f"AI Error {response.status_code}: {response.text}"
+                    self._last_error = err_msg
+                    self._log(err_msg)
                     
-        except Exception as e:
-            self._last_error = f"Request Exception: {e}"
-            self._log(self._last_error)
-        
+                    if "429" in response.text or "API_KEY_SERVICE_BLOCKED" in response.text or "403" in response.text:
+                        self._log(f"AI Quota/Auth issue encountered. Attempting rotation failover...")
+                        if self._rotate_credentials():
+                            continue
+                            
+            except Exception as e:
+                self._last_error = f"Request Exception: {e}"
+                self._log(self._last_error)
+                if self._rotate_credentials():
+                    continue
+            
+            break
+            
         return None
 
     def chat(self, question, context):

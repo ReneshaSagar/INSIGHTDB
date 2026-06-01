@@ -9,6 +9,7 @@ from data_loader import DataLoader
 from schema_analyzer import SchemaAnalyzer
 from quality_engine import QualityEngine
 from ai_service import AIService
+from normalization_engine import NormalizationEngine
 import json
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
@@ -31,6 +32,7 @@ data_loader = DataLoader() # Assuming data is in ../data or defined in loader
 schema_analyzer = None
 quality_engine = None
 ai_service = None
+normalization_engine = None
 project_overview = {}
 full_documentation = {}
 validation_policy = {}
@@ -45,7 +47,7 @@ def serve_static(path):
 
 def _perform_init(data_dir=None, reset=True):
     """Internal helper to load data and run analysis without specific request context."""
-    global schema_analyzer, quality_engine, ai_service, project_overview, full_documentation, validation_policy
+    global schema_analyzer, quality_engine, ai_service, project_overview, full_documentation, validation_policy, normalization_engine
     
     # ALWAYS clear full documentation and overview when new data is added
     project_overview = {}
@@ -61,6 +63,9 @@ def _perform_init(data_dir=None, reset=True):
     
     if ai_service is None:
         ai_service = AIService()
+        
+    if normalization_engine is None:
+        normalization_engine = NormalizationEngine(ai_service=ai_service)
         
     # Strategy 1: AI-Driven Dynamic Audit Rules
     print("Generating AI validation policy...")
@@ -291,6 +296,72 @@ def reset_session():
                 print(f'Failed to delete {file_path}. Reason: {e}')
                 
     return jsonify({"status": "success", "message": "Session reset successful."})
+
+@app.route('/api/normalize', methods=['POST'])
+def normalize_data():
+    """Endpoint to structure unstructured/messy text data into clean CSV."""
+    global ai_service, normalization_engine
+    if ai_service is None:
+        ai_service = AIService()
+    if normalization_engine is None:
+        normalization_engine = NormalizationEngine(ai_service=ai_service)
+        
+    data = request.json
+    raw_text = data.get('text')
+    
+    if not raw_text:
+        return jsonify({"status": "error", "message": "No raw text provided."}), 400
+        
+    try:
+        clean_csv = normalization_engine.normalize_text(raw_text)
+        return jsonify({
+            "status": "success",
+            "csv": clean_csv
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/query', methods=['POST'])
+def run_db_query():
+    """Runs a read-only SQL query on the active SQLite database."""
+    if not data_loader or not data_loader.conn:
+        return jsonify({"status": "error", "message": "Database not initialized."}), 400
+        
+    data = request.json
+    query = data.get('query', '')
+    
+    if not query or not query.strip():
+        return jsonify({"status": "error", "message": "No SQL query provided."}), 400
+        
+    # Security: Ensure query is read-only (disallow modification keywords)
+    forbidden_keywords = ["INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "REPLACE", "TRUNCATE"]
+    clean_query = query.strip().upper()
+    for kw in forbidden_keywords:
+        if kw in clean_query:
+            return jsonify({"status": "error", "message": f"Security restriction: {kw} queries are not allowed in this sandbox console."}), 403
+            
+    try:
+        cursor = data_loader.conn.cursor()
+        cursor.execute(query)
+        
+        if cursor.description:
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
+            serializable_rows = [list(row) for row in rows]
+            return jsonify({
+                "status": "success",
+                "columns": columns,
+                "rows": serializable_rows
+            })
+        else:
+            data_loader.conn.commit()
+            return jsonify({
+                "status": "success",
+                "message": f"Query executed successfully. Affected rows: {cursor.rowcount}"
+            })
+            
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"SQL Error: {str(e)}"}), 500
 
 if __name__ == '__main__':
     # Startup data load disabled per user request - use Upload button in UI

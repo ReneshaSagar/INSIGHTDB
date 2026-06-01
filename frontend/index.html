@@ -110,6 +110,22 @@
                 <input type="file" id="landing-file-input" multiple accept=".csv" style="display: none;">
             </div>
 
+            <!-- AI Data Normalizer Trigger / Interface -->
+            <div class="normalizer-card card" style="margin-top: 30px; text-align: left; padding: 20px;">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    AI Unstructured Data Normalizer
+                </h3>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px;">Paste messy raw text, unformatted values, or emails. Gemini will structure it into clean, relational CSV format.</p>
+                <textarea id="normalizer-input" placeholder="Paste your messy data here (e.g. John Doe, 12-05-2024, $50 | Jane Smith | phone: 123456...)" style="width: 100%; height: 100px; border-radius: 8px; padding: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: monospace; resize: none; margin-bottom: 12px;"></textarea>
+                <button id="normalizer-btn" class="secondary-btn small-btn">⚡ Structure & Normalize Data</button>
+                <div id="normalizer-output-container" class="hidden" style="margin-top: 15px;">
+                    <h4 style="margin-bottom: 6px;">Structured AI Output (CSV)</h4>
+                    <textarea id="normalizer-output" readonly style="width: 100%; height: 100px; border-radius: 8px; padding: 10px; background: var(--bg); border: 1px solid var(--border); color: #10b981; font-family: monospace; resize: none; margin-bottom: 12px;"></textarea>
+                    <button id="normalizer-load-btn" class="primary-btn small-btn">📂 Load this clean data directly</button>
+                </div>
+            </div>
+
         </div>
     </section>
 
@@ -129,6 +145,9 @@
                 </li>
                 <li class="nav-item" id="nav-docs">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Full Documentation
+                </li>
+                <li class="nav-item" id="nav-sql">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg> SQL Query Console
                 </li>
             </ul>
 
@@ -257,6 +276,35 @@
                         <div class="report-section">
                             <h3>Data Integrity Assessment</h3>
                             <p id="report-quality">Evaluating quality...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SQL Query Console View -->
+            <section id="sql-view" class="view-section hidden">
+                <div class="card sql-console-container" style="padding: 24px;">
+                    <h2>SQL DBMS Console</h2>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px;">
+                        Write standard, read-only SQL queries to inspect and fetch custom subsets of your datasets directly from the SQLite database.
+                    </p>
+                    
+                    <div class="sql-input-row" style="margin-bottom: 20px;">
+                        <textarea id="sql-editor" placeholder="SELECT * FROM olist_customers_dataset LIMIT 5;" style="width: 100%; height: 120px; font-family: monospace; border-radius: 8px; padding: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); resize: none; margin-bottom: 12px; font-size: 0.95rem;"></textarea>
+                        <div style="display: flex; gap: 12px;">
+                            <button id="run-sql-btn" class="primary-btn">▶ Run Query</button>
+                            <button id="clear-sql-btn" class="secondary-btn">Clear</button>
+                        </div>
+                    </div>
+                    
+                    <div id="sql-output-container" class="hidden" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px;">
+                        <h3>Query Output</h3>
+                        <div id="sql-output-summary" style="margin-bottom: 10px; font-weight: 500; font-size: 0.9rem;"></div>
+                        <div class="table-scroll-wrapper" style="overflow-x: auto; max-width: 100%; border: 1px solid var(--border); border-radius: 8px;">
+                            <table class="data-table" id="sql-result-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                                <thead id="sql-result-head" style="background: var(--card-bg); font-weight: bold; border-bottom: 2px solid var(--border);"></thead>
+                                <tbody id="sql-result-body"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

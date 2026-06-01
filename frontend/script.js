@@ -33,6 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-dashboard').addEventListener('click', () => navigateTo('dashboard'));
     document.getElementById('nav-docs').addEventListener('click', () => navigateTo('docs'));
     document.getElementById('view-full-docs-btn').addEventListener('click', () => navigateTo('docs'));
+    const navSql = document.getElementById('nav-sql');
+    if (navSql) {
+        navSql.addEventListener('click', () => navigateTo('sql'));
+    }
 
     // Exit Session
 });
@@ -61,18 +65,23 @@ function initSplashScreen() {
 
     if (!splash || !video) return;
 
+    // Smart Mobile Bypass: Check if screen width is under 768px (standard tablet/mobile breakpoint)
+    if (window.innerWidth < 768) {
+        console.log("Mobile viewport detected. Bypassing intro splash video for instant performance.");
+        splash.style.display = 'none';
+        return;
+    }
+
     // Start video playback
     video.play().catch(err => {
         console.warn("Video auto-play blocked or failed:", err);
-        // If auto-play fails, we might stay dark, so let's just transition if it doesn't work
-        // or wait for a user click. For now, we'll try to play.
     });
 
     const hideSplash = () => {
         splash.classList.add('fade-out');
         setTimeout(() => {
             splash.style.display = 'none';
-        }, 800); // Match CSS transition time
+        }, 800);
     };
 
     video.onended = hideSplash;
@@ -443,7 +452,16 @@ async function handleAuthAction(type, creds = {}) {
         // onAuthStateChanged will handle the view switch
     } catch (error) {
         console.error("Auth Error:", error);
-        errorEl.innerText = error.message;
+        let errorMsg = error.message;
+        
+        // Advanced Diagnostic Helper Prompts
+        if (error.code === 'auth/operation-not-allowed' || errorMsg.includes('operation-not-allowed')) {
+            errorMsg += "\n\n💡 DIAGNOSTIC TIP: This sign-in method is currently disabled. Go to the Firebase Console -> Authentication -> Sign-in method, and make sure both 'Email/Password' and 'Google' providers are ENABLED.";
+        } else if (error.code === 'auth/unauthorized-domain' || errorMsg.includes('unauthorized-domain')) {
+            errorMsg += "\n\n💡 DIAGNOSTIC TIP: This domain is not authorized for OAuth. Ensure your current domain (e.g. huggingface.co or local IP) is added to the Authorized Domains list in the Firebase Console -> Authentication -> Settings.";
+        }
+        
+        errorEl.innerText = errorMsg;
         errorEl.classList.remove('hidden');
     }
 }
@@ -524,17 +542,21 @@ function navigateTo(view) {
     const dashboardView = document.getElementById('dashboard-view');
     const docView = document.getElementById('documentation-view');
     const tableView = document.getElementById('table-view');
+    const sqlView = document.getElementById('sql-view');
     const navDashboard = document.getElementById('nav-dashboard');
     const navDocs = document.getElementById('nav-docs');
+    const navSql = document.getElementById('nav-sql');
 
     // Hide all views
     dashboardView.classList.add('hidden');
     docView.classList.add('hidden');
     tableView.classList.add('hidden');
+    if (sqlView) sqlView.classList.add('hidden');
 
     // Deactivate all nav items
     navDashboard.classList.remove('active');
     navDocs.classList.remove('active');
+    if (navSql) navSql.classList.remove('active');
     document.querySelectorAll('#table-list li').forEach(li => li.classList.remove('active'));
 
     if (view === 'dashboard') {
@@ -546,6 +568,10 @@ function navigateTo(view) {
         navDocs.classList.add('active');
         currentTable = null;
         loadFullDocumentation();
+    } else if (view === 'sql') {
+        if (sqlView) sqlView.classList.remove('hidden');
+        if (navSql) navSql.add('active');
+        currentTable = null;
     }
 }
 
@@ -818,6 +844,160 @@ function setupEventListeners() {
             
             // Re-render charts to update colors with new theme context
             updateDashboardMetrics();
+        });
+    }
+
+    // AI Data Normalizer
+    const normalizerBtn = document.getElementById('normalizer-btn');
+    const normalizerInput = document.getElementById('normalizer-input');
+    const normalizerOutput = document.getElementById('normalizer-output');
+    const normalizerOutputContainer = document.getElementById('normalizer-output-container');
+    const normalizerLoadBtn = document.getElementById('normalizer-load-btn');
+
+    if (normalizerBtn && normalizerInput && normalizerOutput) {
+        normalizerBtn.addEventListener('click', async () => {
+            const rawText = normalizerInput.value.trim();
+            if (!rawText) {
+                alert("Please paste some raw or messy data to structure first.");
+                return;
+            }
+
+            const originalBtnText = normalizerBtn.innerText;
+            normalizerBtn.innerText = "⏳ Structuring data...";
+            normalizerBtn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/normalize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: rawText })
+                });
+                const data = await res.json();
+                if (res.ok && data.csv) {
+                    normalizerOutput.value = data.csv;
+                    if (normalizerOutputContainer) normalizerOutputContainer.classList.remove('hidden');
+                } else {
+                    alert(data.message || "Failed to normalize data.");
+                }
+            } catch (e) {
+                console.error("Normalizer error:", e);
+                alert("Could not reach the normalization service.");
+            } finally {
+                normalizerBtn.innerText = originalBtnText;
+                normalizerBtn.disabled = false;
+            }
+        });
+    }
+
+    if (normalizerLoadBtn && normalizerOutput) {
+        normalizerLoadBtn.addEventListener('click', () => {
+            const csvContent = normalizerOutput.value.trim();
+            if (!csvContent) {
+                alert("No normalized data found to load.");
+                return;
+            }
+
+            try {
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const mockFile = new File([blob], 'normalized_data.csv', { type: 'text/csv' });
+                
+                // Switch back view and load
+                handleFileUpload({ target: { files: [mockFile] } }, false);
+            } catch (err) {
+                console.error("Load normalizer data error:", err);
+                alert("Failed to package normalized data for loading.");
+            }
+        });
+    }
+
+    // SQL DBMS Query Console
+    const runSqlBtn = document.getElementById('run-sql-btn');
+    const clearSqlBtn = document.getElementById('clear-sql-btn');
+    const sqlEditor = document.getElementById('sql-editor');
+    const sqlOutputContainer = document.getElementById('sql-output-container');
+    const sqlOutputSummary = document.getElementById('sql-output-summary');
+    const sqlResultHead = document.getElementById('sql-result-head');
+    const sqlResultBody = document.getElementById('sql-result-body');
+
+    if (runSqlBtn && sqlEditor) {
+        runSqlBtn.addEventListener('click', async () => {
+            const query = sqlEditor.value.trim();
+            if (!query) {
+                alert("Please write a SQL query to execute.");
+                return;
+            }
+
+            if (sqlOutputContainer) sqlOutputContainer.classList.remove('hidden');
+            sqlOutputSummary.innerText = "⏳ Executing query...";
+            sqlOutputSummary.style.color = "var(--text)";
+            sqlResultHead.innerHTML = '';
+            sqlResultBody.innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    if (data.columns && data.rows) {
+                        sqlOutputSummary.innerText = `Success: ${data.rows.length} rows returned.`;
+                        sqlOutputSummary.style.color = "#10b981";
+
+                        // Build headers
+                        const trHead = document.createElement('tr');
+                        data.columns.forEach(col => {
+                            const th = document.createElement('th');
+                            th.innerText = col;
+                            th.style.padding = "10px";
+                            th.style.borderBottom = "1px solid var(--border)";
+                            trHead.appendChild(th);
+                        });
+                        sqlResultHead.appendChild(trHead);
+
+                        // Build rows
+                        if (data.rows.length === 0) {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `<td colspan="${data.columns.length}" style="padding: 15px; text-align: center; color: var(--text-secondary);">No results found.</td>`;
+                            sqlResultBody.appendChild(tr);
+                        } else {
+                            data.rows.forEach(row => {
+                                const tr = document.createElement('tr');
+                                row.forEach(val => {
+                                    const td = document.createElement('td');
+                                    td.innerText = val !== null ? val : 'NULL';
+                                    td.style.padding = "8px 10px";
+                                    td.style.borderBottom = "1px solid var(--border)";
+                                    tr.appendChild(td);
+                                });
+                                sqlResultBody.appendChild(tr);
+                            });
+                        }
+                    } else {
+                        sqlOutputSummary.innerText = data.message || "Query executed successfully.";
+                        sqlOutputSummary.style.color = "#10b981";
+                    }
+                } else {
+                    sqlOutputSummary.innerText = data.message || "An error occurred.";
+                    sqlOutputSummary.style.color = "#ef4444";
+                }
+            } catch (e) {
+                console.error("SQL Run error:", e);
+                sqlOutputSummary.innerText = "Error: Failed to connect to server backend.";
+                sqlOutputSummary.style.color = "#ef4444";
+            }
+        });
+    }
+
+    if (clearSqlBtn && sqlEditor) {
+        clearSqlBtn.addEventListener('click', () => {
+            sqlEditor.value = '';
+            if (sqlOutputContainer) sqlOutputContainer.classList.add('hidden');
+            sqlOutputSummary.innerText = '';
+            sqlResultHead.innerHTML = '';
+            sqlResultBody.innerHTML = '';
         });
     }
 }
